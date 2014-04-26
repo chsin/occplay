@@ -43,20 +43,19 @@ def cubeVerts():
     # cube verts on a unit sphere
     points = [(1, 1, 1), (1, 1, -1), (1, -1, 1), (1, -1, -1), 
               (-1, 1, 1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1)]
-    verts = [np.array(p) / np.sqrt(sum(np.array(p) ** 2)) for p in points]
+    verts = [np.array(p) / mag(np.array(p)) for p in points]
     return verts
 
-def cube():
+def octahedron(side = 1.0):
     verts = cubeVerts()
     print "vertices ", len(verts)
-    side, d2 =  distance(verts)[:2]
-    norms = closestNorm4(verts, side, d2)
+
+    norms = closestNorm4(verts)
     print "normals ", len(norms)
-
-    cubes = [rot(cadmium.Box(x = side, y = side, z = side, 
-                             center = True), *n).translate(*n) for n in norms]
-
-    (cadmium.Sphere(r = 1.0, center = True) - sum(cubes)).toSTL("cube.stl")
+    
+    cubes = [rot(cadmium.Box(x = 1.5 * side, y = 1.5 * side, z = 1.5 * side, 
+                             center = True), *tuple(v)).translate(*tuple(v)) for v in verts]
+    (cadmium.Sphere(r = 0.7 * side, center = True) - sum(cubes)).toSTL("octa.stl")
 
 def tetrahedronVerts():
     # tetrahedron verts on a unit sphere centered at the origin
@@ -65,7 +64,7 @@ def tetrahedronVerts():
     verts = [np.array(p) / mag(np.array(p)) for p in points]
     return verts
 
-def tetrahedron():
+def tetrahedron(side = 2.0):
     # get tetrahedron verts on a unit sphere
     verts = tetrahedronVerts()
     print "vertices ", len(verts)
@@ -76,13 +75,12 @@ def tetrahedron():
 
     cubes = []
     for n in norms:
-        side = 2.0
         t = n * (mag(n) + side / 2.0) / mag(n)
         box = rot(cadmium.Box(x = side, y = side, z = side, 
                               center = True), *tuple(n)).translate(*tuple(t))
         cubes.append(box)
 
-    (cadmium.Sphere(r = 1.0, center = True) - sum(cubes)).toSTL("tetra.stl")
+    (cadmium.Sphere(r = side / 2.0, center = True) - sum(cubes)).toSTL("tetra.stl")
 
 def icosahedronVerts():
     # icosahedron verts on a unit sphere centered at the origin
@@ -93,7 +91,7 @@ def icosahedronVerts():
     verts = [np.array(p) / np.sqrt(sum(np.array(p) ** 2)) for p in points]
     return verts
 
-def icosahedron():
+def icosahedron(side = 2.0):
     # get tetrahedron verts on a unit sphere
     verts = icosahedronVerts()
     print "vertices ", len(verts)
@@ -110,7 +108,7 @@ def icosahedron():
                               center = True), *tuple(n)).translate(*tuple(t))
         cubes.append(box)
 
-    (cadmium.Sphere(r = 1.0, center = True) - sum(cubes)).toSTL("icosa.stl")
+    (cadmium.Sphere(r = side / 2.0, center = True) - sum(cubes)).toSTL("icosa.stl")
 
 def distance(verts):
     d = []
@@ -142,16 +140,17 @@ def closestThree(verts, d1, d2 = 0):
     return centers
 
 
-def closestNorm4(verts, d, d2):
+def closestNorm4(verts):
     normals = []
+    d, d2 = np.sqrt(distance(verts)[:2])
     for i, j, k in itertools.product(range(len(verts)), range(len(verts)), range(len(verts))):
-        if  ((i < j) and (np.abs(sum((verts[i] - verts[j]) ** 2) - d) < tolerance)):
-            if  ((j < k) and (np.abs(sum((verts[i] - verts[k]) ** 2) - d) < tolerance)
-                  and (np.abs(sum((verts[j] - verts[k]) ** 2) - d2) < tolerance)):
-                norm = np.cross(verts[i] - verts[j], verts[i] - verts[k])
-                if (mag(norm) > tolerance()):
-                    normals.append(norm / mag(norm))
-                    normals.append(- norm / mag(norm))
+        if ((i < j) and (i < k)):
+            if (np.abs(mag(verts[i] - verts[j]) - d) < tolerance()):
+                if ((np.abs(mag(verts[i] - verts[k]) - d) < tolerance())
+                    and (np.abs(mag(verts[j] - verts[k]) - d2) < tolerance())):
+                    norm = np.cross(verts[i] - verts[j], verts[i] - verts[k])
+                    if (mag(norm) > tolerance()):
+                        normals.append(norm / mag(norm))
     return normals
 
 
@@ -189,6 +188,6 @@ def golf():
 if __name__=='__main__':
     # pumpkin()
     # golf()
-    cube()
+    octahedron()
     tetrahedron()
     icosahedron()
