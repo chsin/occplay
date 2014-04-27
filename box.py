@@ -46,17 +46,6 @@ def cubeVerts():
     verts = [np.array(p) / mag(np.array(p)) for p in points]
     return verts
 
-def octahedron(side = 1.0):
-    verts = cubeVerts()
-    print "vertices ", len(verts)
-
-    norms = closestNorm4(verts)
-    print "normals ", len(norms)
-    
-    cubes = [rot(cadmium.Box(x = 1.5 * side, y = 1.5 * side, z = 1.5 * side, 
-                             center = True), *tuple(v)).translate(*tuple(v)) for v in verts]
-    (cadmium.Sphere(r = 0.7 * side, center = True) - sum(cubes)).toSTL("octa.stl")
-
 def tetrahedronVerts():
     # tetrahedron verts on a unit sphere centered at the origin
     psi = 1.0 / np.sqrt(2)
@@ -64,14 +53,30 @@ def tetrahedronVerts():
     verts = [np.array(p) / mag(np.array(p)) for p in points]
     return verts
 
+def icosahedronVerts():
+    # icosahedron verts on a unit sphere centered at the origin
+    phi = (1.0 + np.sqrt(5))/ 2.0
+    points = [(0, 1, phi), (0, -1, phi), (0, 1, -phi), (0, -1, -phi),
+              (1, phi, 0), (-1, phi, 0), (1, -phi, 0), (-1, -phi, 0),
+              (phi, 0, 1), (phi, 0, -1), (-phi, 0, 1), (-phi, 0, -1)]
+    verts = [np.array(p) / mag(np.array(p)) for p in points]
+    return verts
+
+def cube(side = 1.0):
+    cadmium.Box(x = side, y = side, z = side, center = True).toSTL("cube.stl")
+
+def octahedron(side = 1.0):
+    verts = cubeVerts()
+    cubes = [rot(cadmium.Box(x = 1.5 * side, y = 1.5 * side, z = 1.5 * side, 
+                             center = True), *tuple(v)).translate(*tuple(v)) for v in verts]
+    (cadmium.Sphere(r = 0.7 * side, center = True) - sum(cubes)).toSTL("octa.stl")
+
 def tetrahedron(side = 2.0):
     # get tetrahedron verts on a unit sphere
     verts = tetrahedronVerts()
-    print "vertices ", len(verts)
 
     # get vectors to middle of each face
     norms = closestNorm3(verts)
-    print "normals ", len(norms)
 
     cubes = []
     for n in norms:
@@ -82,23 +87,12 @@ def tetrahedron(side = 2.0):
 
     (cadmium.Sphere(r = side / 2.0, center = True) - sum(cubes)).toSTL("tetra.stl")
 
-def icosahedronVerts():
-    # icosahedron verts on a unit sphere centered at the origin
-    phi = (1.0 + np.sqrt(5))/ 2.0
-    points = [(0, 1, phi), (0, -1, phi), (0, 1, -phi), (0, -1, -phi),
-              (1, phi, 0), (-1, phi, 0), (1, -phi, 0), (-1, -phi, 0),
-              (phi, 0, 1), (phi, 0, -1), (-phi, 0, 1), (-phi, 0, -1)]
-    verts = [np.array(p) / np.sqrt(sum(np.array(p) ** 2)) for p in points]
-    return verts
-
 def icosahedron(side = 2.0):
     # get tetrahedron verts on a unit sphere
     verts = icosahedronVerts()
-    print "vertices ", len(verts)
 
     # get vectors to middle of each triangular face
     norms = closestNorm3(verts)
-    print "normals ", len(norms)
 
     cubes = []
     for n in norms:
@@ -110,11 +104,19 @@ def icosahedron(side = 2.0):
 
     (cadmium.Sphere(r = side / 2.0, center = True) - sum(cubes)).toSTL("icosa.stl")
 
+def dodecahedron(side = 1.0):
+    verts = icosahedronVerts()
+    cubes = [rot(cadmium.Box(x = 1.5 * side, y = 1.5 * side, z = 1.5 * side, 
+                             center = True), 
+                 *tuple(v)).translate(*tuple(v)) for v in verts]
+    (cadmium.Sphere(r = side, center = True) - sum(cubes)).toSTL("dodeca.stl")
+             
+
 def distance(verts):
     d = []
     for i, j in itertools.product(range(len(verts)), range(len(verts))):
         if i < j:
-            d.append(round(sum((verts[i] - verts[j]) ** 2), 4))
+            d.append(round(np.sqrt(sum((verts[i] - verts[j]) ** 2)), 4))
     return sorted( set(d) )
 
 def NewVertsAtDistance(verts, d):
@@ -142,7 +144,7 @@ def closestThree(verts, d1, d2 = 0):
 
 def closestNorm4(verts):
     normals = []
-    d, d2 = np.sqrt(distance(verts)[:2])
+    d, d2 = distance(verts)[:2]
     for i, j, k in itertools.product(range(len(verts)), range(len(verts)), range(len(verts))):
         if ((i < j) and (i < k)):
             if (np.abs(mag(verts[i] - verts[j]) - d) < tolerance()):
@@ -155,7 +157,7 @@ def closestNorm4(verts):
 
 
 def closestNorm3(verts):
-    d =  np.sqrt(distance(verts)[0])
+    d =  distance(verts)[0]
     normals = []
     for i, j, k in itertools.product(range(len(verts)), range(len(verts)), range(len(verts))):
         if ((i < j) and (j < k)):
@@ -170,11 +172,11 @@ def closestNorm3(verts):
 def golf():
     verts = icosahedronVerts()
 
-    d = distance(verts)[0]
+    d = distance(verts)[0] **2
     newverts = NewVertsAtDistance(verts, d)
     verts += newverts
 
-    d1, d2 = distance(verts)[:2]
+    d1, d2 = distance(verts)[:2] **2
     centers = closestThree(verts, d1, d2)
 
     for v in newverts:
@@ -188,6 +190,8 @@ def golf():
 if __name__=='__main__':
     # pumpkin()
     # golf()
+    cube()
     octahedron()
     tetrahedron()
     icosahedron()
+    dodecahedron()
