@@ -3,18 +3,19 @@ import cadmium
 import itertools
 import numpy as np
 
-def  tolerance():
-    return 0.001
+def tolerance():
+    return 0.0001
 
 def mag(n):
     return np.sqrt(sum(n **2))
 
 def rot(solid, x = 0, y= 0, z = 0):
-    a = np.array([x, y, z]) / mag(np.array([x, y, z]))
     # does two rotations:
     # 1. about z-axis
-    Zaxis = np.array([0.0, 0.0, 1.0], dtype = float)
     # 2. about cross product of input vector and z-axis
+
+    a = np.array([x, y, z]) / mag(np.array([x, y, z]))
+    Zaxis = np.array([0.0, 0.0, 1.0], dtype = float)
     Caxis = np.cross(Zaxis, a)
 
     if (mag(Caxis) > tolerance()):
@@ -68,47 +69,36 @@ def cube(side = 1.0):
 def octahedron(side = 1.0):
     verts = cubeVerts()
     cubes = [rot(cadmium.Box(x = 1.5 * side, y = 1.5 * side, z = 1.5 * side, 
-                             center = True), *tuple(v)).translate(*tuple(v)) for v in verts]
+                             center = True), *tuple(v)).translate(*tuple(v)) 
+             for v in verts]
     (cadmium.Sphere(r = 0.7 * side, center = True) - sum(cubes)).toSTL("octa.stl")
 
-def tetrahedron(side = 2.0):
-    # get tetrahedron verts on a unit sphere
+def tetrahedron(side = 1.0):
     verts = tetrahedronVerts()
-
-    # get vectors to middle of each face
     norms = closestNorm3(verts)
 
-    cubes = []
-    for n in norms:
-        t = n * (mag(n) + side / 2.0) / mag(n)
-        box = rot(cadmium.Box(x = side, y = side, z = side, 
-                              center = True), *tuple(n)).translate(*tuple(t))
-        cubes.append(box)
+    cubes = [rot(cadmium.Box(x = 2.0 * side, y = 2.0 * side, z = 2.0 * side, 
+                             center = True), 
+                 *tuple(n)).translate(*tuple(n * (mag(n) + side) / mag(n))) 
+             for n in norms]
+    (cadmium.Sphere(r = side, center = True) - sum(cubes)).toSTL("tetra.stl")
 
-    (cadmium.Sphere(r = side / 2.0, center = True) - sum(cubes)).toSTL("tetra.stl")
-
-def icosahedron(side = 2.0):
-    # get tetrahedron verts on a unit sphere
+def icosahedron(side = 1.0):
     verts = icosahedronVerts()
-
-    # get vectors to middle of each triangular face
     norms = closestNorm3(verts)
 
-    cubes = []
-    for n in norms:
-        side = 2.0
-        t = n * (mag(n) + side / 2.0) / mag(n)
-        box = rot(cadmium.Box(x = side, y = side, z = side, 
-                              center = True), *tuple(n)).translate(*tuple(t))
-        cubes.append(box)
-
-    (cadmium.Sphere(r = side / 2.0, center = True) - sum(cubes)).toSTL("icosa.stl")
+    cubes = [rot(cadmium.Box(x = 2.0 * side, y = 2.0 * side, z = 2.0 * side, 
+                              center = True), 
+                  *tuple(n)).translate(*tuple(n * (mag(n) + side) / mag(n))) 
+             for n in norms]
+    (cadmium.Sphere(r = side , center = True) - sum(cubes)).toSTL("icosa.stl")
 
 def dodecahedron(side = 1.0):
     verts = icosahedronVerts()
     cubes = [rot(cadmium.Box(x = 1.5 * side, y = 1.5 * side, z = 1.5 * side, 
                              center = True), 
-                 *tuple(v)).translate(*tuple(v)) for v in verts]
+                 *tuple(v)).translate(*tuple(v)) 
+             for v in verts]
     (cadmium.Sphere(r = side, center = True) - sum(cubes)).toSTL("dodeca.stl")
              
 
@@ -122,8 +112,8 @@ def distance(verts):
 def NewVertsAtDistance(verts, d):
     newverts = []
     for i, j in itertools.product(range(len(verts)), range(len(verts))):
-            if  (i < j and np.abs(sum((verts[i] - verts[j]) ** 2) - d) < tolerance()):
-                newverts.append((verts[i] + verts[j]) / np.sqrt(sum((verts[i] + verts[j]) ** 2)))
+            if  (i < j and np.abs(mag(verts[i] - verts[j]) - d) < tolerance()):
+                newverts.append((verts[i] + verts[j]) / mag(verts[i] + verts[j]))
     return newverts
 
 def closestThree(verts, d1, d2 = 0):
@@ -131,10 +121,16 @@ def closestThree(verts, d1, d2 = 0):
         d2 = d1
 
     centers = []
-    for i, j, k in itertools.product(range(len(verts)), range(len(verts)), range(len(verts))):
-        if  ((i < j) and ((np.abs(sum((verts[i] - verts[j]) ** 2) - d1) < tolerance()) or (np.abs(sum((verts[i] - verts[j]) ** 2) - d2) < tolerance()))):
-            if  ((j < k) and ((np.abs(sum((verts[i] - verts[k]) ** 2) - d1) < tolerance()) or (np.abs(sum((verts[i] - verts[k]) ** 2) - d2) < tolerance()))
-                  and ((np.abs(sum((verts[j] - verts[k]) ** 2) - d1) < tolerance()) or (np.abs(sum((verts[j] - verts[k]) ** 2) - d2) < tolerance()))):
+    L = len(verts)
+    for i, j, k in itertools.product(range(L), range(L), range(L)):
+        if  ((i < j) and 
+             ((np.abs(mag(verts[i] - verts[j]) - d1) < tolerance()) or 
+              (np.abs(mag(verts[i] - verts[j]) - d2) < tolerance()))):
+            if  ((j < k) and 
+                 ((np.abs(mag(verts[i] - verts[k]) - d1) < tolerance()) or 
+                  (np.abs(mag(verts[i] - verts[k]) - d2) < tolerance())) and 
+                 ((np.abs(mag(verts[j] - verts[k]) - d1) < tolerance()) or 
+                  (np.abs(mag(verts[j] - verts[k]) - d2) < tolerance()))):
                 for a, b, c in ((i, j, k), (j, k, i), (k, i, j)):
                     center = verts[a] + verts[b] + 2.8 * verts[c]
                     center = center / np.sqrt(sum(center ** 2))
@@ -172,11 +168,11 @@ def closestNorm3(verts):
 def golf():
     verts = icosahedronVerts()
 
-    d = distance(verts)[0] **2
+    d = distance(verts)[0]
     newverts = NewVertsAtDistance(verts, d)
     verts += newverts
 
-    d1, d2 = distance(verts)[:2] **2
+    d1, d2 = distance(verts)[:2]
     centers = closestThree(verts, d1, d2)
 
     for v in newverts:
