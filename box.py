@@ -34,6 +34,11 @@ def sum(seq):
         return 0 
     return reduce(operator.add, seq)
 
+def intersect(seq):
+    if len(seq) == 0:
+        return 0
+    return reduce(operator.mul, seq)
+
 def pumpkin():
     spheres = [cadmium.Sphere(r = 1.1).translate(np.sin(2.0 * np.pi * r), 
                                                  np.cos(2.0 * np.pi * r), 
@@ -64,14 +69,19 @@ def icosahedronVerts():
     return verts
 
 def cube(side = 1.0):
-    cadmium.Box(x = side, y = side, z = side, center = True).toSTL("cube.stl")
+    cube = cadmium.Box(x = side, y = side, z = side, center = True)
+    cube.toSTL("cube.stl")
+    return cube
 
 def octahedron(side = 1.0):
     verts = cubeVerts()
     cubes = [rot(cadmium.Box(x = 1.5 * side, y = 1.5 * side, z = 1.5 * side, 
-                             center = True), *tuple(v)).translate(*tuple(v)) 
+                             center = True), 
+                 *tuple(v)).translate(*tuple(side * v)) 
              for v in verts]
-    (cadmium.Sphere(r = 0.7 * side, center = True) - sum(cubes)).toSTL("octa.stl")
+    octa = (cadmium.Sphere(r = 0.7 * side, center = True) - sum(cubes))
+    octa.toSTL("octa.stl")
+    return octa
 
 def tetrahedron(side = 1.0):
     verts = tetrahedronVerts()
@@ -81,7 +91,9 @@ def tetrahedron(side = 1.0):
                              center = True), 
                  *tuple(n)).translate(*tuple(n * (mag(n) + side) / mag(n))) 
              for n in norms]
-    (cadmium.Sphere(r = side, center = True) - sum(cubes)).toSTL("tetra.stl")
+    tetra = (cadmium.Sphere(r = side, center = True) - sum(cubes))
+    tetra.toSTL("tetra.stl")
+    return tetra
 
 def icosahedron(side = 1.0):
     verts = icosahedronVerts()
@@ -89,18 +101,21 @@ def icosahedron(side = 1.0):
 
     cubes = [rot(cadmium.Box(x = 2.0 * side, y = 2.0 * side, z = 2.0 * side, 
                               center = True), 
-                  *tuple(n)).translate(*tuple(n * (mag(n) + side) / mag(n))) 
+                  *tuple(n)).translate(*tuple(n * side * (mag(n) + side) / mag(n))) 
              for n in norms]
-    (cadmium.Sphere(r = side , center = True) - sum(cubes)).toSTL("icosa.stl")
+    icosa = (cadmium.Sphere(r = side , center = True) - sum(cubes))
+    icosa.toSTL("icosa.stl")
+    return icosa
 
 def dodecahedron(side = 1.0):
     verts = icosahedronVerts()
     cubes = [rot(cadmium.Box(x = 1.5 * side, y = 1.5 * side, z = 1.5 * side, 
                              center = True), 
-                 *tuple(v)).translate(*tuple(v)) 
+                 *tuple(v)).translate(*tuple(v * side)) 
              for v in verts]
-    (cadmium.Sphere(r = side, center = True) - sum(cubes)).toSTL("dodeca.stl")
-             
+    dodeca = (cadmium.Sphere(r = side, center = True) - sum(cubes))
+    dodeca.toSTL("dodeca.stl")
+    return dodeca
 
 def distance(verts):
     d = []
@@ -186,8 +201,15 @@ def golf():
 if __name__=='__main__':
     # pumpkin()
     # golf()
-    cube()
-    octahedron()
-    tetrahedron()
-    icosahedron()
-    dodecahedron()
+    # cube()
+    # octahedron()
+    # tetrahedron()
+    # icosahedron()
+    # dodecahedron()
+    # intersect([icosahedron(), dodecahedron(2.7)]).toSTL("dif.stl")
+
+    s = 3.0
+    intersect([icosahedron(),
+               rot(octahedron(s), 0.5, 0.0, 0.5), 
+               rot(octahedron(s), 0.5, 0.5, 0.0), 
+               rot(octahedron(s), 0.0, 0.5, 0.5)]).toSTL("sub.stl")
