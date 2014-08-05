@@ -93,6 +93,34 @@ def centered_cube_from_side( side ):
     point2 = make_point( a * np.ones(3, dtype=float))
     return BRepPrimAPI_MakeBox(point1, point2)
 
+def corner_cube1( side ):
+    a = float(side / 2.0);
+    array1 = np.array((1, 1, 1), dtype=float)
+    point1 = make_point(-a * array1)
+    point2 = make_point((-a + side / 3.0) * array1)
+    return BRepPrimAPI_MakeBox(point1, point2)
+
+def corner_cube2( side ):
+    a = float(side / 2.0);
+    array2 = np.array((1, 1, -1), dtype=float)
+    point1 = make_point(-a * array2)
+    point2 = make_point((-a + side / 3.0) * array2)
+    return BRepPrimAPI_MakeBox(point1, point2)
+
+def corner_cube3( side ):
+    a = float(side / 2.0);
+    array3 = np.array((1, -1, 1), dtype=float)
+    point1 = make_point(-a * array3)
+    point2 = make_point((-a + side / 3.0) * array3)
+    return BRepPrimAPI_MakeBox(point1, point2)
+
+def corner_cube4( side ):
+    a = float(side / 2.0);
+    array4 = np.array((1, -1, -1), dtype=float)
+    point1 = make_point(-a * array4)
+    point2 = make_point((-a + side / 3.0) * array4)
+    return BRepPrimAPI_MakeBox(point1, point2)
+
 def sphere_shape():
     diameter = 1.5
     origin = np.zeros(3, dtype=float)
@@ -136,6 +164,34 @@ def cut_cone_shape():
     
     return BRepAlgoAPI_Common(cone_minus_sphere, cube_shape()).Shape()
 
+def corner_piece_shape1():
+    cube = corner_cube1( 3.0 ).Shape()
+    return BRepAlgoAPI_Cut(cube, sphere_shape()).Shape()
+
+def corner_piece_shape2():
+    cube = corner_cube2( 3.0 ).Shape()
+    return BRepAlgoAPI_Cut(cube, sphere_shape()).Shape()
+
+def corner_piece_shape3():
+    cube = corner_cube3( 3.0 ).Shape()
+    return BRepAlgoAPI_Cut(cube, sphere_shape()).Shape()
+
+def corner_piece_shape4():
+    cube = corner_cube4( 3.0 ).Shape()
+    return BRepAlgoAPI_Cut(cube, sphere_shape()).Shape()
+
+def draw_corner_piece_1():
+    display.DisplayColoredShape( corner_piece_shape1() , 'BLACK' )
+
+def draw_corner_piece_2():
+    display.DisplayColoredShape( corner_piece_shape2() , 'BLACK' )
+
+def draw_corner_piece_3():
+    display.DisplayColoredShape( corner_piece_shape3() , 'BLACK' )
+
+def draw_corner_piece_4():
+    display.DisplayColoredShape( corner_piece_shape4() , 'BLACK' )
+
 def draw_cut_cone(event=None):
     display.DisplayColoredShape( cut_cone_shape() , 'BLACK' )
 
@@ -150,6 +206,11 @@ if __name__ == '__main__':
     add_function_to_menu('Draw', draw_cone)
     add_function_to_menu('Draw', draw_cube)
     add_function_to_menu('Draw', draw_cut_cone)
+    add_menu('Cubes')
+    add_function_to_menu('Cubes', draw_corner_piece_1)
+    add_function_to_menu('Cubes', draw_corner_piece_2)
+    add_function_to_menu('Cubes', draw_corner_piece_3)
+    add_function_to_menu('Cubes', draw_corner_piece_4)
     add_menu('Erase')
     add_function_to_menu('Erase', erase_all)
     start_display()

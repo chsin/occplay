@@ -206,7 +206,6 @@ if __name__=='__main__':
     # tetrahedron()
     # icosahedron()
     # dodecahedron()
-    # intersect([icosahedron(), dodecahedron(2.7)]).toSTL("dif.stl")
 
     s = 3.0
     intersect([icosahedron(),
