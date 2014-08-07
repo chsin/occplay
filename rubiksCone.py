@@ -4,14 +4,25 @@ from OCC.gp import *
 from OCC.BRepPrimAPI import *
 from OCC.BRepAlgoAPI import *
 from OCC.StlAPI import *
+from OCC.STEPControl import *
 import numpy as np
 from scipy import linalg
 
-def toSTL(thingus, filename, ascii=False, deflection=0.001):
+def toSTL(shape, filename, ascii=False, deflection=0.001):
     stl_writer = StlAPI_Writer()
     stl_writer.SetASCIIMode(ascii)
     stl_writer.SetDeflection(deflection)
-    stl_writer.Write(thingus, filename)
+    stl_writer.Write(shape, filename)
+
+def toSTEP(shape, filename, verbose=False, tolerance=0.001):
+        stepWriter = STEPControl_Writer()
+        stepWriter.SetTolerance(tolerance)
+        if shape:
+            status = stepWriter.Transfer(shape, STEPControl_AsIs )
+        if status:
+            stepWriter.Write(filename)
+        if verbose:
+            stepWriter.PrintStatsTransfer()
 
 def make_point(coordinates):
     '''
@@ -386,6 +397,10 @@ def erase_all(event=None):
     display.EraseAll()
 
 if __name__ == '__main__':
+    toSTEP(corner_piece(), 'corner.step')
+    toSTEP(edge_piece(), 'edge.step')
+    toSTEP(face_piece(), 'face.step')
+
     toSTL(corner_piece(), 'corner.stl')
     toSTL(edge_piece(), 'edge.stl')
     toSTL(face_piece(), 'face.stl')
