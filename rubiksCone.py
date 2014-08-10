@@ -8,6 +8,9 @@ from OCC.STEPControl import *
 import numpy as np
 from scipy import linalg
 
+cubeSide = 300.0
+sphereDiameter = 200.0
+
 def toSTL(shape, filename, ascii=False, deflection=0.001):
     stl_writer = StlAPI_Writer()
     stl_writer.SetASCIIMode(ascii)
@@ -111,9 +114,8 @@ def layer_shape(side, v, sign = 1):
     return BRepPrimAPI_MakeBox(point1, point2).Shape()
 
 def sphere_shape():
-    diameter = 200.0
     origin = np.zeros(3, dtype=float)
-    sphere = make_sphere( origin, diameter / 2.0 )
+    sphere = make_sphere( origin, sphereDiameter / 2.0 )
     return sphere.Shape()
    
 def cone_shape(v):
@@ -126,8 +128,7 @@ def cone_shape(v):
     return make_cone(apex, axis, height, radius1, radius2).Shape()
 
 def cube_shape():
-    side = 300.0
-    return make_cube(side).Shape()
+    return make_cube(cubeSide).Shape()
 
 def draw_sphere(event = None):
     display.DisplayColoredShape( sphere_shape() , 'RED' )
@@ -147,22 +148,19 @@ def cut_top_cone():
 
 def cone_layer_shape(direction, sign = 1.0):
     coneShape = cone_shape(direction * sign)
-    layer = layer_shape(300.0, direction, sign)
+    layer = layer_shape(cubeSide, direction, sign)
     step1 =  BRepAlgoAPI_Common(coneShape, cube_shape()).Shape()
     step2 =  BRepAlgoAPI_Fuse(step1, layer).Shape()
     return BRepAlgoAPI_Cut(step2, sphere_shape()).Shape()
 
 def x_cone_layer(sign = 1.0):
-    direction = np.array((1, 0, 0), dtype=np.float)
-    return cone_layer_shape(direction, sign)
+    return cone_layer_shape(np.array((1, 0, 0), dtype=np.float), sign)
 
 def y_cone_layer(sign = 1.0):
-    direction = np.array((0, 1, 0), dtype=np.float)
-    return cone_layer_shape(direction, sign)
+    return cone_layer_shape( np.array((0, 1, 0), dtype=np.float), sign)
 
 def z_cone_layer(sign = 1.0):
-    direction = np.array((0, 0, 1), dtype=np.float)
-    return cone_layer_shape(direction, sign)
+    return cone_layer_shape(np.array((0, 0, 1), dtype=np.float), sign)
 
 def face_piece():
     step1 = BRepAlgoAPI_Cut(y_cone_layer(-1.0), z_cone_layer(-1.0)).Shape()
@@ -185,22 +183,22 @@ def draw_cut_top_cone(event=None):
 def draw_cut_bottom_cone(event=None):
     display.DisplayColoredShape(cut_bottom_cone(), 'BLACK')
 
-def draw_top_layer(event=None):
+def draw_white_layer(event=None):
     display.DisplayColoredShape(x_cone_layer(1.0), 'BLUE')
 
-def draw_bottom_layer(event=None):
+def draw_yellow_layer(event=None):
     display.DisplayColoredShape(x_cone_layer(-1.0), 'BLUE')
 
-def draw_back_layer(event=None):
+def draw_blue_layer(event=None):
     display.DisplayColoredShape( y_cone_layer(1.0), 'BLUE')
 
-def draw_front_layer(event=None):
+def draw_green_layer(event=None):
     display.DisplayColoredShape(y_cone_layer(-1.0), 'BLUE')
 
-def draw_right_layer(event=None):
+def draw_red_layer(event=None):
     display.DisplayColoredShape(z_cone_layer(1.0), 'BLUE')
 
-def draw_left_layer(event=None):
+def draw_orange_layer(event=None):
     display.DisplayColoredShape(z_cone_layer(-1.0), 'BLUE')
 
 def draw_face_piece(event=None):
@@ -216,13 +214,13 @@ def erase_all(event=None):
     display.EraseAll()
 
 if __name__ == '__main__':
-    # toSTEP(corner_piece(), 'corner.step')
-    # toSTEP(edge_piece(), 'edge.step')
-    # toSTEP(face_piece(), 'face.step')
+    toSTEP(corner_piece(), 'corner.step')
+    toSTEP(edge_piece(), 'edge.step')
+    toSTEP(face_piece(), 'face.step')
 
-    # toSTL(corner_piece(), 'corner.stl')
-    # toSTL(edge_piece(), 'edge.stl')
-    # toSTL(face_piece(), 'face.stl')
+    toSTL(corner_piece(), 'corner.stl')
+    toSTL(edge_piece(), 'edge.stl')
+    toSTL(face_piece(), 'face.stl')
 
     display, start_display, add_menu, add_function_to_menu = \
         init_display()
@@ -231,17 +229,17 @@ if __name__ == '__main__':
     add_function_to_menu('Draw', draw_cube)
     add_function_to_menu('Draw', draw_cut_bottom_cone)
     add_function_to_menu('Draw', draw_cut_top_cone)
+    add_menu('Layers')
+    add_function_to_menu('Layers', draw_white_layer)
+    add_function_to_menu('Layers', draw_yellow_layer)
+    add_function_to_menu('Layers', draw_green_layer)
+    add_function_to_menu('Layers', draw_red_layer)
+    add_function_to_menu('Layers', draw_blue_layer)
+    add_function_to_menu('Layers', draw_orange_layer)
     add_menu('Cubes')
     add_function_to_menu('Cubes', draw_face_piece)
     add_function_to_menu('Cubes', draw_edge_piece)
     add_function_to_menu('Cubes', draw_corner_piece)
-    add_menu('Layers')
-    add_function_to_menu('Layers', draw_bottom_layer)
-    add_function_to_menu('Layers', draw_top_layer)
-    add_function_to_menu('Layers', draw_front_layer)
-    add_function_to_menu('Layers', draw_back_layer)
-    add_function_to_menu('Layers', draw_left_layer)
-    add_function_to_menu('Layers', draw_right_layer)
     add_menu('Erase')
     add_function_to_menu('Erase', erase_all)
     start_display()
