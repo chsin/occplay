@@ -201,11 +201,15 @@ def face_piece():
 def edge_piece():
     step1 = BRepAlgoAPI_Common(y_cone_layer(-1.0), z_cone_layer(-1.0)).Shape()
     step2 = BRepAlgoAPI_Cut(step1, x_cone_layer(1.0)).Shape()
-    return BRepAlgoAPI_Cut(step2, x_cone_layer(-1.0)).Shape()
+    step3 = BRepAlgoAPI_Cut(step2, x_cone_layer(-1.0)).Shape()
+    v = np.array((0, 1, 1), dtype=np.float)
+    return BRepAlgoAPI_Cut(step3, cylinder_shape(v)).Shape()
 
 def corner_piece():
-    step = BRepAlgoAPI_Common(y_cone_layer(-1.0), z_cone_layer(-1.0)).Shape()
-    return BRepAlgoAPI_Common(step, x_cone_layer(1.0)).Shape()
+    step1 = BRepAlgoAPI_Common(y_cone_layer(-1.0), z_cone_layer(-1.0)).Shape()
+    step2 = BRepAlgoAPI_Common(step1, x_cone_layer(1.0)).Shape()
+    v = np.array((-1, 1, 1), dtype=np.float)
+    return BRepAlgoAPI_Cut(step2, cylinder_shape(v)).Shape()
 
 def draw_cut_top_cone(event=None):
     display.DisplayColoredShape(cut_top_cone(), 'BLACK')
@@ -214,7 +218,7 @@ def draw_cut_bottom_cone(event=None):
     display.DisplayColoredShape(cut_bottom_cone(), 'BLACK')
 
 def draw_cylinder(event=None):
-    v = np.array((0, 1, 0), dtype=np.float)
+    v = np.array((-1, 1, 1), dtype=np.float)
     display.DisplayColoredShape(cylinder_shape(v), 'WHITE')
 
 def draw_white_layer(event=None):
