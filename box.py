@@ -211,4 +211,4 @@ if __name__=='__main__':
     intersect([icosahedron(),
                rot(octahedron(s), 0.5, 0.0, 0.5), 
                rot(octahedron(s), 0.5, 0.5, 0.0), 
-               rot(octahedron(s), 0.0, 0.5, 0.5)]).toSTL("sub.stl")
+               rot(octahedron(s), 0.0, 0.5, 0.5)]).scale(25.4).toSTEP("sub.step")

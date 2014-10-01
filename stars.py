@@ -213,7 +213,7 @@ def dodecahedron(side = 1.0):
 def dodecahedronMilledStar(side = 1.0):
     verts = icosahedronVerts()
     cylinders = []
-    powers = np.arange(10)
+    powers = np.arange(3)
     for p in powers:
         a = 0.13 * side * 0.74**p
         cylinders += [rot(cadmium.Cylinder(r = a, h = a, 
