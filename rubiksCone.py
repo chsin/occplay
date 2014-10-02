@@ -9,6 +9,7 @@ from OCC.TopoDS import *
 from OCC.TopAbs import *
 from OCC import StlAPI
 from OCC import STEPControl
+from OCC.Utils import Topology
 import numpy as np
 from scipy import linalg
 
@@ -185,11 +186,8 @@ def cube_shape():
 
 def fillet_all(shape):
     fillet = BRepFilletAPI_MakeFillet(shape)
-    Ex = TopExp_Explorer(shape, TopAbs_EDGE)
-    while Ex.More():
-        Edge = TopoDS_edge(Ex.Current())
-        fillet.Add(.5, Edge)
-        Ex.Next()
+    for edge in Topology.Topo(shape).edges():
+        fillet.Add(.5, edge)
     return fillet.Shape()
 
 
