@@ -10,10 +10,11 @@ from OCC.TopAbs import *
 from OCC import StlAPI
 from OCC import STEPControl
 from OCC.Utils import Topology
+from OCC.AIS import * 
 import numpy as np
 from scipy import linalg
 
-reScale = 3.93701
+reScale = 3.93701  
 cubeSide = 300.0 * 1.5 / 2.0 / reScale
 sphereRadius = 100.0 * 1.5 / 2.0 / reScale
 tanAngle = 1.5
@@ -155,7 +156,7 @@ def layer_shape(side, v, sign = 1):
     array1 = -a * np.ones(3, dtype=float)
     point1 = make_point(-a * np.ones(3, dtype=float))
     array2 =  a *(np.ones(3, dtype=float) - 4./3 * v)
-    point2 = make_point(a *(np.ones(3, dtype=float) - 4./3 * v)) 
+    point2 = make_point(a *(np.ones(3, dtype=float) - 4./3 * v))
     return BRepPrimAPI_MakeBox(point1, point2).Shape()
 
 
@@ -167,11 +168,10 @@ def sphere_shape():
 
 def cylinder_shape(axis):
     apex = (sphereRadius - cylinderHeight) * axis / linalg.norm(axis)
-
     radius = cylinderDiameter / 2.0
     return make_cylinder(apex, axis, cylinderHeight * 2.0, radius).Shape()
 
-   
+
 def cone_shape(axis):
     # create cone with this axis
     apex = apexShift * axis
@@ -254,7 +254,59 @@ def corner_piece():
     v = np.array((-1, 1, 1), dtype=np.float)
     return BRepAlgoAPI_Cut(step2, cylinder_shape(v)).Shape()
 
+def holder():
+    #variables used
+    stock2D = 300.0 * 1.0 / reScale #3"
+    cubeSidePlus = cubeSide*1.004  #2.259"
+    stockHalved = float(stock2D / 2.0) # 1.5"
+    csp3rd = float(cubeSidePlus / 3.0) # 0.753"
 
+    #make stock: 3x3x.753
+    stockP1 = make_point(np.array((-stockHalved, -stockHalved, 0), dtype=np.float))
+    stockP2 = make_point(np.array((stockHalved, stockHalved, csp3rd), dtype=np.float))
+    stock_box = BRepPrimAPI_MakeBox(stockP1, stockP2).Shape()
+
+    #cut where rubiks layer will sit:
+    cb_XY = cubeSidePlus / 2.0
+    cbZ_low = cubeSide / 2.0 / 3.0
+    cbZ_hi = cubeSide / 2.0
+    cbP1 = make_point(np.array((-cb_XY, -cb_XY, cbZ_low), dtype=np.float))
+    cbP2 = make_point(np.array((cb_XY, cb_XY, cbZ_hi), dtype=np.float))
+    rubiks_layer_box = BRepPrimAPI_MakeBox(cbP1, cbP2).Shape()
+
+    #corners
+    dir_pnt = np.array((0, 0, 1), dtype=np.float)
+    r = 100.0 * .25 / 2.0 / reScale #.125
+    h = cbZ_hi - cbZ_low
+    xy_list = [(cb_XY,cb_XY), (cb_XY, -cb_XY), (-cb_XY,cb_XY), (-cb_XY,-cb_XY)]
+    for xy in xy_list:
+        cpt = np.array((xy[0], xy[1], cbZ_low), dtype=np.float)
+        cc = make_cylinder(cpt, dir_pnt, h, r).Shape()
+        rubiks_layer_box = BRepAlgoAPI_Fuse(rubiks_layer_box, cc).Shape()
+
+    # remove insides
+    cutRLayer = BRepAlgoAPI_Cut(stock_box, rubiks_layer_box).Shape()
+
+    # cut cylinder for cubes' conical protrusion
+    sphereRadius = 100.0 * 1.5 / 2.0 / reScale #d=1.5,r=.75
+    center_pnt = np.array((0, 0, sphereRadius*.25), dtype=np.float)
+    cylinder = make_cylinder(center_pnt, dir_pnt, csp3rd, sphereRadius*1.3).Shape()
+    holder = BRepAlgoAPI_Cut(cutRLayer, cylinder).Shape()
+
+    # add sphere shape
+    bottomP1 = make_point(np.array((-stockHalved, -stockHalved, -stockHalved), dtype=np.float))
+    bottomP2 = make_point(np.array((stockHalved, stockHalved, 0), dtype=np.float))
+    box_bottom = BRepPrimAPI_MakeBox(bottomP1, bottomP2).Shape()
+    cutted_sphere = BRepAlgoAPI_Cut(sphere_shape(), box_bottom).Shape()
+    addSphere = BRepAlgoAPI_Fuse(cutted_sphere, holder).Shape()
+
+    # displays shape
+    ais_shape = AIS_Shape(addSphere).GetHandle()
+    ais_context = display.GetContext().GetObject()
+    ais_context.SetTransparency(ais_shape, 0.5, True)
+    ais_context.Display(ais_shape)
+
+#### Draw functions
 def draw_cut_top_cone(event=None):
     display.DisplayColoredShape(cut_top_cone(), 'BLACK')
 
@@ -297,24 +349,22 @@ def draw_face_piece(event=None):
 def draw_edge_piece(event=None):
     display.DisplayColoredShape(fillet_all(edge_piece()), 'GREEN')
 
-
 def draw_corner_piece(event=None):
     print corner_piece()
     display.DisplayColoredShape(fillet_all(corner_piece()), 'CYAN')
-
 
 def erase_all(event=None):
     display.EraseAll()
 
 
 if __name__ == '__main__':
-    toSTEP(corner_piece(), 'corner.step')
-    toSTEP(edge_piece(), 'edge.step')
-    toSTEP(face_piece(), 'face.step')
+#    toSTEP(corner_piece(), 'corner.step')
+#    toSTEP(edge_piece(), 'edge.step')
+#    toSTEP(face_piece(), 'face.step')
 
-    toSTL(corner_piece(), 'corner.stl')
-    toSTL(edge_piece(), 'edge.stl')
-    toSTL(face_piece(), 'face.stl')
+#    toSTL(corner_piece(), 'corner.stl')
+#    toSTL(edge_piece(), 'edge.stl')
+#    toSTL(face_piece(), 'face.stl')
 
     display, start_display, add_menu, add_function_to_menu = \
         init_display()
@@ -335,6 +385,8 @@ if __name__ == '__main__':
     add_function_to_menu('Cubes', draw_face_piece)
     add_function_to_menu('Cubes', draw_edge_piece)
     add_function_to_menu('Cubes', draw_corner_piece)
+    add_menu('Holder')
+    add_function_to_menu('Holder', holder)
     add_menu('Erase')
     add_function_to_menu('Erase', erase_all)
     start_display()
